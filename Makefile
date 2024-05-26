@@ -2,7 +2,7 @@ SHELL = /usr/bin/bash
 init: .venv
 
 
-clean: 
+clean:
 	rm -r .venv
 
 
@@ -12,4 +12,7 @@ clean:
 	python3 -m pip install -r requirements.txt
 
 dock:
-	docker build -f ./docker/Dockerfile  .
+	docker build --no-cache --tag yana    --progress=plain -f ./docker/Dockerfile  .
+
+run:
+	docker run --rm  -p 8080:80 yana:latest
