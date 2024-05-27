@@ -14,5 +14,8 @@ clean:
 dock:
 	docker build --no-cache --tag yana    --progress=plain -f ./docker/Dockerfile  .
 
-run:
+run-compose:
+	docker compose up  --force-recreate --file docker/compose.yml
+
+run-alone:
 	docker run --rm  -p 8080:80 yana:latest
