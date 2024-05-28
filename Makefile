@@ -9,7 +9,7 @@ clean:
 	python3 -m venv .venv && \
 	source .venv/bin/activate && \
 	python3 -m pip install -r requirements.txt && \
-	python3 -m spacy download fr_core_news_sm
+	python3 -m spacy download fr_core_news_sm 
 
 dock:
 	docker build --no-cache --tag yana    --progress=plain -f ./docker/Dockerfile  .

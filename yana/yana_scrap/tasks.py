@@ -7,10 +7,15 @@ import re
 class Article():
     """ Small Data Holder class for Articles, regardless of Source."""
     def __init__(self,title,condensed,text,source):
-        self.title = title
-        self.condensed = condensed
-        self.text=text
-        self.source=source
+        def purify_string(to_purify:str)->str:
+             return to_purify.replace('’',"'").replace('«','"').replace('»','"')
+
+
+        self.title:str = purify_string(title)
+        self.condensed:str = purify_string(condensed)
+        self.text:str=purify_string(text)
+        self.source:str=source
+
     
     def __str__(self):
         return f" SOURCE={self.source} TITLE={self.title} \n CONDENSED={self.condensed} \n TEXT={self.text}"
@@ -259,23 +264,28 @@ def get_all_articles_Monde()-> list[Article]:
 
 
 if __name__=="__main__":
-     array_figrao = get_all_articles_Figaro()
-     array_monde = get_all_articles_Monde()
-    #link_array=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/")
-    #article_array=[]
-    #for a_link in link_array:
-    #    print(a_link)
-    #    article_array.append(Article_Scrapper_Le_Monde.get_article(a_link))
-    #print(len(article_array))
+    #array_figrao = get_all_articles_Figaro()
+    array_monde = get_all_articles_Monde()
+    print("spacy time !")
+    import spacy     
+    mynlp = spacy.load('fr_core_news_sm')
+    spacydoc=mynlp(array_monde[0].condensed)
+    print ("===========shalllow knowledge===========")
+    for ent in spacydoc.ents:
+         print(ent.text,ent.label_)
+    print ("===========characterization===========")
+    for token in spacydoc:
+        if token.pos_ =="NOUN" or token.pos_ == "NUM" : print(token.text,token.pos_,token.lemma_)
+
+    
+    
+
     
 
 
     
     
-#import spacy     
-#myspacy = spacy.load('fr_core_news_sm')
-#    
-#myspacy.evaluate
+
     
 
 
