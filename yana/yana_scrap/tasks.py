@@ -2,16 +2,18 @@ import requests
 import bs4
 import typing
 import abc
-
+import re
 
 class Article():
-    def __init__(self,title,condensed,text):
+    """ Small Data Holder class for Articles, regardless of Source."""
+    def __init__(self,title,condensed,text,source):
         self.title = title
         self.condensed = condensed
         self.text=text
+        self.source=source
     
     def __str__(self):
-        return f" TITLE={self.title} \n CONDENSED={self.condensed} \n TEXT={self.text}"
+        return f" SOURCE={self.source} TITLE={self.title} \n CONDENSED={self.condensed} \n TEXT={self.text}"
 
 
 class Main_Page_Scrapper(abc.ABC):
@@ -61,6 +63,7 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
 
     @classmethod
     def __full_article_filter(cls,tag:bs4.Tag)-> bool:
+        """ From the Main Page of Le Monde, ensures only press articles are extracted."""
         toret =cls.__filter_articles_only(tag)
         toret = toret and tag.find(cls.__generate_filter_by_article_type("Tribune")) is None
         toret = toret and tag.find(cls.__generate_filter_by_article_type("Chronique")) is None
@@ -117,7 +120,7 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
         for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
             paragraph:bs4.Tag
             artic_text+="\n"+ paragraph.text
-        return Article(artic_title,artic_desc,artic_text)
+        return Article(artic_title,artic_desc,artic_text,"LEMONDE")
     
     # ======== filter functions to analyse the tree (helper lambdas  of the helper functions) ============
     @classmethod
@@ -134,21 +137,145 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
         
 
 
+
+class Main_Page_Scrapper_Le_Figaro(Main_Page_Scrapper):
+
+    # Main interest function, must be implemented by all Main page scrappers 
+    @classmethod
+    def get_article_links(cls,url:str)->list[str]:
+        tree  = cls.__scrap_main_page(url)
+        result:bs4.ResultSet[bs4.PageElement]= tree.find_all(cls.__full_article_filter)
+        toret = [ cls.__extract_link(raw_article) for raw_article in result ]
+        return toret
+          
+      
+
+    @classmethod
+    def __scrap_main_page(cls,url:str) -> bs4.BeautifulSoup:
+        """ returns None if URL is invalid / unreachable, else a BeautifulSoup of all beacons"""
+        if url is None : return None
+        result=requests.get(url)
+        if not result.ok : return None
+        tree = bs4.BeautifulSoup(result.text,features="html.parser")
+        return tree 
+
+    @classmethod
+    def __generate_filter_by_article_type(cls,article_type:str) -> typing.Callable[[bs4.Tag],bool]:
+        """ Returns a filter function which can be used in beautifulSoup find* function,
+         to filter Articles of Le Monde main's page based on the type of article"""
+        generic_filter = lambda tag :   tag.has_attr("class") and "article__type" in tag["class"] and article_type  in tag.text 
+        return generic_filter
+
+
+    @classmethod
+    def __full_article_filter(cls,tag:bs4.Tag)-> bool:
+        """ From the Main Page of Le Figaro, ensures only press articles are extracted."""
+        toret =cls.__filter_articles_only(tag)
+        toret = toret and tag.find(cls.__filter_lefigaro_domain_only) 
+        return toret      
+    
+    @classmethod
+    def __filter_articles_only(cls,tag:bs4.Tag)-> bool: 
+            return tag.name=="article" and tag.has_attr('data-content-name') and ( "newsflash" in tag["data-content-name"] or  "article" in tag["data-content-name"] ) 
+
+    @classmethod
+    def __filter_lefigaro_domain_only(cls,tag:bs4.Tag)-> bool: 
+            domain_string="https://www.lefigaro.fr"
+            return tag.name=="a" and tag["href"].find(domain_string,0,len(domain_string)) == 0
+
+    @classmethod
+    def __extract_title(cls,tag:bs4.Tag)-> str | None :
+        """From the Main Page Le Figaro, extracts the Title of the given Article.  """
+        filter :typing.Callable[[bs4.Tag],bool] = lambda searchtag : re.match("h\d",searchtag.name) is not None 
+        return tag.find(filter).text
+    
+    @classmethod
+    def __extract_link(cls,tag:bs4.Tag)-> str| None:
+        """From the Main Page Le Figaro, extracts the link to the given Article.  """
+        filter :typing.Callable[[bs4.Tag],bool] = lambda searchtag : searchtag.name == "a" 
+        return tag.find(filter)["href"]
+
+
+class Article_Scrapper_Le_Figaro(Article_Scrapper):
+
+    #========= Main interest function, must be implemented by all scrapers
+    @classmethod
+    def get_article(cls,url:str)->Article:
+        """Given the URL of a Le Figaro Article, converts it to an Article Object."""
+        tree:bs4.BeautifulSoup = cls.__download_page(url)
+        if tree is None : raise RuntimeError("Unable to Access the requested web page or to convert it into a soup.")
+        return cls.__parse_page(tree)
+
+    # ================ helper functions  ===================
+    @classmethod
+    def __download_page(cls,url:str)-> bs4.BeautifulSoup | None:
+        """ Downloads the Page at the given URL and converts it into a Soup."""
+        if url is None : return None
+        result=requests.get(url)
+        if not result.ok : return None
+        return  bs4.BeautifulSoup(result.text,features="html.parser")
+   
+    @classmethod
+    def __parse_page(cls,pagesoup:bs4.BeautifulSoup):       
+        artic_title=pagesoup.find(cls.__filter_title).text       
+        artic_desc=pagesoup.find(cls.__filter_description).text
+        artic_text=""
+        for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
+            paragraph:bs4.Tag
+            artic_text+="\n"+ paragraph.text
+        return Article(artic_title,artic_desc,artic_text,"LEFIGARO")
+    
+    # ======== filter functions to analyse the tree (helper lambdas  of the helper functions) ============
+    @classmethod
+    def __filter_text_only(cls,tag:bs4.Tag)-> bool: 
+            return tag.name=="p" and tag.has_attr('class') and "fig-paragraph" in tag["class"] 
+        
+    @classmethod
+    def __filter_description(cls,tag:bs4.Tag)-> bool: 
+        return tag.name=="p" and tag.has_attr('class') and "fig-standfirst" in tag["class"] 
+
+    @classmethod
+    def __filter_title(cls,tag:bs4.Tag)-> bool: 
+        return tag.name=="h1" and tag.has_attr('class') and "fig-headline" in tag["class"] 
+        
+
     
 
+def get_all_articles_Figaro()-> list[Article]:
+    link_array=Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/")
+    article_array=[]
+    for a_link in link_array:
+        article_array.append(Article_Scrapper_Le_Figaro.get_article(a_link))
+    return article_array
 
-if __name__=="__main__":
+
+def get_all_articles_Monde()-> list[Article]:
     link_array=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/")
     article_array=[]
     for a_link in link_array:
-        print(a_link)
         article_array.append(Article_Scrapper_Le_Monde.get_article(a_link))
-    print(len(article_array))
+    return article_array
+
+
+
+if __name__=="__main__":
+     array_figrao = get_all_articles_Figaro()
+     array_monde = get_all_articles_Monde()
+    #link_array=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/")
+    #article_array=[]
+    #for a_link in link_array:
+    #    print(a_link)
+    #    article_array.append(Article_Scrapper_Le_Monde.get_article(a_link))
+    #print(len(article_array))
     
-    
+
 
     
     
+#import spacy     
+#myspacy = spacy.load('fr_core_news_sm')
+#    
+#myspacy.evaluate
     
 
 

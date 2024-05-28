@@ -21,7 +21,7 @@ COPY Makefile .
 COPY LICENSE .
 COPY README.md .
 COPY shell ./shell
-RUN make .venv
+RUN make init
 RUN chmod   755 /root/
 RUN chmod   755 /root/django-yana
 RUN chmod   755 /root/django-yana/.venv
