@@ -3,18 +3,41 @@ import bs4
 import typing
 import abc
 import re
+import spacy
+import time 
 
 class Article():
     """ Small Data Holder class for Articles, regardless of Source."""
+
+     
+    __article_nlp = spacy.load('fr_core_news_sm')
+    __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
+
+
     def __init__(self,title,condensed,text,source):
         def purify_string(to_purify:str)->str:
-             return to_purify.replace('’',"'").replace('«','"').replace('»','"')
+            "remove french ticks which aren't processed correctly by the module right now"
+            return to_purify.replace('’',"'").replace('«','"').replace('»','"')
 
 
         self.title:str = purify_string(title)
         self.condensed:str = purify_string(condensed)
         self.text:str=purify_string(text)
         self.source:str=source
+        self.wordset= set()
+        self.crunch_data()
+
+
+    def crunch_data(self):
+        """Analyzes words present in the Article."""
+        spacydoc=self.__article_nlp(self.title +" "+self.condensed+" "+self.text)
+        for token in spacydoc:
+            if token.pos_ =="NOUN" or token.pos_ == "NUM" :self.wordset.add(token.lemma)
+    
+    def articles_are_similar(self,artic:"Article"):
+        """Do the articles have enough words in common to be deemed near ?"""
+        intersection_size= len(self.wordset.intersection(artic.wordset))  
+        return intersection_size/len(self.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL and intersection_size/len(artic.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL
 
     
     def __str__(self):
@@ -44,8 +67,9 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     def get_article_links(cls,url:str)->list[str]:
         tree  = cls.__scrap_main_page(url)
         result:bs4.ResultSet[bs4.PageElement]= tree.find_all(Main_Page_Scrapper_Le_Monde.__full_article_filter)
-        toret = [ cls.__extract_link(raw_article) for raw_article in result ]
-        return toret
+        toret:list["str"] = [ cls.__extract_link(raw_article) for raw_article in result ]
+        return [e for e in set(toret)]
+        #return toret
           
       
 
@@ -79,7 +103,7 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     
     @classmethod
     def __filter_articles_only(cls,tag:bs4.Tag)-> bool: 
-            return tag.name=="div" and tag.has_attr('class') and "article" in tag["class"] 
+            return (tag.name=="div" and tag.has_attr('class') and "article" in tag["class"]) or (tag.name=="a" and tag.has_attr('class') and "article" in tag["class"] )
 
     @classmethod
     def __filter_live(cls,tag:bs4.Tag)-> bool: 
@@ -95,7 +119,8 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     def __extract_link(cls,tag:bs4.Tag)-> str| None:
         """From the Main Page Le Monde, extracts the link to the given Article.  """
         filter :typing.Callable[[bs4.Tag],bool] = lambda searchtag : searchtag.name == "a" 
-        return tag.find(filter)["href"]
+        if filter(tag) :return tag["href"]
+        else :return  tag.find(filter)["href"]
 
 
 class Article_Scrapper_Le_Monde(Article_Scrapper):
@@ -264,18 +289,18 @@ def get_all_articles_Monde()-> list[Article]:
 
 
 if __name__=="__main__":
-    #array_figrao = get_all_articles_Figaro()
-    array_monde = get_all_articles_Monde()
-    print("spacy time !")
-    import spacy     
-    mynlp = spacy.load('fr_core_news_sm')
-    spacydoc=mynlp(array_monde[0].condensed)
-    print ("===========shalllow knowledge===========")
-    for ent in spacydoc.ents:
-         print(ent.text,ent.label_)
-    print ("===========characterization===========")
-    for token in spacydoc:
-        if token.pos_ =="NOUN" or token.pos_ == "NUM" : print(token.text,token.pos_,token.lemma_)
+    start_time = time.time()
+    array_figaro:list["Article"] = get_all_articles_Figaro()
+    print(f"crunched {len(array_figaro)} Figaro in {time.time()-start_time}")
+    start_time = time.time()
+    array_monde:list["Article"] = get_all_articles_Monde()
+    print(f"crunched {len(array_monde)} Monde in {time.time()-start_time}")
+
+    for artic_fig in array_figaro :
+        for artic_monde in array_monde:
+            if artic_fig.articles_are_similar(artic_monde) : print(f"Figaro :{artic_fig.title}  \nMonde: {artic_monde.title} \nMatch!!!!! \n")
+
+        
 
     
     
