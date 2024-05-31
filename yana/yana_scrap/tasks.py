@@ -5,6 +5,8 @@ import abc
 import re
 import spacy
 import time 
+import logging
+from models import article_db,journal_db
 
 class Article():
     """ Small Data Holder class for Articles, regardless of Source."""
@@ -13,6 +15,10 @@ class Article():
     __article_nlp = spacy.load('fr_core_news_sm')
     __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
 
+    def convert_to_db_article(self)->article_db:
+        lefigaro =journal_db(name="Le Figaro", political = journal_db.ORIENTATION[3])
+        lemonde =journal_db(name="Le Monde", political = journal_db.ORIENTATION[1])
+        return article_db(title=self.title,journal=lefigaro if self.source =="LEFIGARO" else lemonde ,condensed_text=self.condensed)
 
     def __init__(self,title,condensed,text,source):
         def purify_string(to_purify:str)->str:
