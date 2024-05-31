@@ -32,12 +32,12 @@ class Article():
         """Analyzes words present in the Article."""
         spacydoc=self.__article_nlp(self.title +" "+self.condensed+" "+self.text)
         for token in spacydoc:
-            if token.pos_ =="NOUN" or token.pos_ == "NUM" :self.wordset.add(token.lemma)
+            if token.pos_ =="NOUN" or token.pos_ == "NUM" :self.wordset.add(token.text.lower())
     
     def articles_are_similar(self,artic:"Article"):
         """Do the articles have enough words in common to be deemed near ?"""
         intersection_size= len(self.wordset.intersection(artic.wordset))  
-        return intersection_size/len(self.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL and intersection_size/len(artic.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL
+        return  (intersection_size/len(self.wordset), intersection_size/len(artic.wordset) ) #intersection_size/len(self.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL and intersection_size/len(artic.wordset)  > self.__ARTICLE_SIMILAR_THRESHOLD_LEVEL
 
     
     def __str__(self):
@@ -68,6 +68,7 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
         tree  = cls.__scrap_main_page(url)
         result:bs4.ResultSet[bs4.PageElement]= tree.find_all(Main_Page_Scrapper_Le_Monde.__full_article_filter)
         toret:list["str"] = [ cls.__extract_link(raw_article) for raw_article in result ]
+        print(f"From link {url} scrapped {len(toret)}")
         return [e for e in set(toret)]
         #return toret
           
@@ -86,7 +87,7 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     def __generate_filter_by_article_type(cls,article_type:str) -> typing.Callable[[bs4.Tag],bool]:
         """ Returns a filter function which can be used in beautifulSoup find* function,
          to filter Articles of Le Monde main's page based on the type of article"""
-        generic_filter = lambda tag :   tag.has_attr("class") and "article__type" in tag["class"] and article_type  in tag.text 
+        generic_filter = lambda tag :    re.match(f"\s*{article_type}\s*",tag.text) is not  None    #tag.has_attr("class") and "article__type" in tag["class"] and article_type  in tag.text 
         return generic_filter
 
 
@@ -103,7 +104,7 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     
     @classmethod
     def __filter_articles_only(cls,tag:bs4.Tag)-> bool: 
-            return (tag.name=="div" and tag.has_attr('class') and "article" in tag["class"]) or (tag.name=="a" and tag.has_attr('class') and "article" in tag["class"] )
+            return (tag.name=="div" and tag.has_attr('class') and "article" in tag["class"]) or (tag.name=="a" and tag.has_attr('class') and "article" in tag["class"] ) or  ( tag.name=="section" and tag.has_attr('class') and "teaser" in tag["class"])
 
     @classmethod
     def __filter_live(cls,tag:bs4.Tag)-> bool: 
@@ -127,8 +128,8 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
 
     #========= Main interest function, must be implemented by all scrapers
     @classmethod
-    def get_article(cls,url:str)->Article:
-        """Given the URL of a Le Monde Article, converts it to an Article Object."""
+    def get_article(cls,url:str)->Article | None:
+        """Given the URL of a Le Monde Article, converts it to an Article Object. Returns None if conversion fails."""
         tree:bs4.BeautifulSoup = cls.__download_page(url)
         if tree is None : raise RuntimeError("Unable to Access the requested web page or to convert it into a soup.")
         return cls.__parse_page(tree)
@@ -143,14 +144,18 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
         return  bs4.BeautifulSoup(result.text,features="html.parser")
    
     @classmethod
-    def __parse_page(cls,pagesoup:bs4.BeautifulSoup):       
-        artic_title=pagesoup.find(cls.__filter_title).text       
-        artic_desc=pagesoup.find(cls.__filter_description).text
-        artic_text=""
-        for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
-            paragraph:bs4.Tag
-            artic_text+="\n"+ paragraph.text
-        return Article(artic_title,artic_desc,artic_text,"LEMONDE")
+    def __parse_page(cls,pagesoup:bs4.BeautifulSoup):
+        try :
+            artic_title=pagesoup.find(cls.__filter_title).text       
+            artic_desc=pagesoup.find(cls.__filter_description).text
+            artic_text=""
+            for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
+                paragraph:bs4.Tag
+                artic_text+="\n"+ paragraph.text
+            return Article(artic_title,artic_desc,artic_text,"LEMONDE")
+        except  AttributeError as  e:
+            print(f"Attribute Error {str(e)}")
+            return None
     
     # ======== filter functions to analyse the tree (helper lambdas  of the helper functions) ============
     @classmethod
@@ -176,6 +181,7 @@ class Main_Page_Scrapper_Le_Figaro(Main_Page_Scrapper):
         tree  = cls.__scrap_main_page(url)
         result:bs4.ResultSet[bs4.PageElement]= tree.find_all(cls.__full_article_filter)
         toret = [ cls.__extract_link(raw_article) for raw_article in result ]
+        print(f"From link {url} scrapped {len(toret)}")
         return toret
           
       
@@ -272,7 +278,7 @@ class Article_Scrapper_Le_Figaro(Article_Scrapper):
     
 
 def get_all_articles_Figaro()-> list[Article]:
-    link_array=Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/")
+    link_array=Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/")+Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/economie")+Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/actualite-france")
     article_array=[]
     for a_link in link_array:
         article_array.append(Article_Scrapper_Le_Figaro.get_article(a_link))
@@ -280,11 +286,18 @@ def get_all_articles_Figaro()-> list[Article]:
 
 
 def get_all_articles_Monde()-> list[Article]:
-    link_array=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/")
+    link_array=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/economie-francaise/")
+    link_array+=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/")
+    link_array+=Main_Page_Scrapper_Le_Monde.get_article_links("https://www.lemonde.fr/societe/")
+    tempset = set(link_array)
+    link_array = [lnk for lnk in tempset]
+
     article_array=[]
     for a_link in link_array:
-        article_array.append(Article_Scrapper_Le_Monde.get_article(a_link))
-    return article_array
+        theartic = Article_Scrapper_Le_Monde.get_article(a_link)
+        if theartic is None : continue
+        article_array.append(theartic)
+    return article_array 
 
 
 
@@ -295,10 +308,13 @@ if __name__=="__main__":
     start_time = time.time()
     array_monde:list["Article"] = get_all_articles_Monde()
     print(f"crunched {len(array_monde)} Monde in {time.time()-start_time}")
-
+    toprint=""
     for artic_fig in array_figaro :
         for artic_monde in array_monde:
-            if artic_fig.articles_are_similar(artic_monde) : print(f"Figaro :{artic_fig.title}  \nMonde: {artic_monde.title} \nMatch!!!!! \n")
+            similarity=artic_fig.articles_are_similar(artic_monde)
+            toprint += f"Figaro :{artic_fig.title}  \nMonde: {artic_monde.title} \nsimilarity:{similarity} \n\n" if (similarity[0] > 0.2 and similarity[1] > 0.2) or (similarity[0] > 0.4 or  similarity[1] > 0.4) else ""
+    with open("/home/alexandre/Desktop/results.txt","w") as fl:
+        fl.write(toprint)
 
         
 
