@@ -14,4 +14,5 @@ class article_db(models.Model):
     journal= models.ForeignKey(journal_db, on_delete=models.CASCADE)
     condensed_text= models.CharField("")
     publication_date= models.DateField(default=date(1970,1,1))
+    linked_article= models.ManyToManyField("article_db")
 

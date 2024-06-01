@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "yana_main",
+    "yana_scrap",
 ]
 
 MIDDLEWARE = [
@@ -83,13 +85,12 @@ WSGI_APPLICATION = 'yana.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "OPTIONS": {
-           "NAME": "yana_database",
-            "USER": os.environ["PG_USER"],
-            "PASSWORD": os.environ["PG_PASSWORD"],
+            "NAME": "yana-postgres",
+            "USER": os.environ["POSTGRES_USER"],
+            "PASSWORD": os.environ["POSTGRES_PASSWORD"],
             "HOST": os.environ["PG_NAME"],
             "PORT": os.environ["PG_OUTSIDE_PORT"],
-        },
+        
     }
 }
 

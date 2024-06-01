@@ -14,11 +14,30 @@ class Article():
      
     __article_nlp = spacy.load('fr_core_news_sm')
     __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
+    __lefigaro =journal_db(name="Le Figaro", political = journal_db.ORIENTATION[3])
+    __lemonde =journal_db(name="Le Monde", political = journal_db.ORIENTATION[1])
 
     def convert_to_db_article(self)->article_db:
-        lefigaro =journal_db(name="Le Figaro", political = journal_db.ORIENTATION[3])
-        lemonde =journal_db(name="Le Monde", political = journal_db.ORIENTATION[1])
-        return article_db(title=self.title,journal=lefigaro if self.source =="LEFIGARO" else lemonde ,condensed_text=self.condensed)
+        return article_db(title=self.title,journal=Article.__lefigaro if self.source =="LEFIGARO" else Article.__lemonde ,condensed_text=self.condensed,)
+
+    @classmethod
+    def establish_link(cls,article_list1:list["Article"],article_list2:list["Article"])-> list["int"]:
+        article_db_list1:list["article_db"]=[ art.convert_to_db_article() for art in article_list1]
+        article_db_list2:list["article_db"]=[ art.convert_to_db_article() for art in article_list2]
+        for tosave  in article_db_list1 + article_db_list2: tosave.save()
+        
+        index_lst1=0
+        index_lst2=0
+        for artic_lst1 in article_list1 :
+            index_lst2=0
+            for artic_lst2 in article_list2:
+                similarity=artic_lst1.articles_are_similar(artic_lst2)
+                if (similarity[0] > 0.2 and similarity[1] > 0.2) or (similarity[0] > 0.4 or  similarity[1] > 0.4):
+                    article_db_list1[index_lst1].linked_article.add(article_db_list2[index_lst2])
+                index_lst2+=1
+            index_lst1+=1
+
+
 
     def __init__(self,title,condensed,text,source):
         def purify_string(to_purify:str)->str:
