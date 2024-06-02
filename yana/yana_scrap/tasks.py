@@ -6,23 +6,29 @@ import re
 import spacy
 import time 
 import logging
-from models import article_db,journal_db
+from . import models
+
+
+logger= logging.getLogger(__name__)
 
 class Article():
     """ Small Data Holder class for Articles, regardless of Source."""
      
     __article_nlp = spacy.load('fr_core_news_sm')
     __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
-    __lefigaro =journal_db(name="Le Figaro", political = journal_db.R)
-    __lemonde =journal_db(name="Le Monde", political = journal_db.L)
+    __lefigaro =models.journal_db(name="Le Figaro", political = models.journal_db.R)
+    __lefigaro.save()
+    
+    __lemonde =models.journal_db(name="Le Monde", political = models.journal_db.L)
+    __lemonde.save()
 
-    def convert_to_db_article(self)->article_db:
-        return article_db(title=self.title,journal=Article.__lefigaro if self.source =="LEFIGARO" else Article.__lemonde ,condensed_text=self.condensed,)
+    def convert_to_db_article(self)->models.article_db:
+        return models.article_db(title=self.title,journal=Article.__lefigaro if self.source =="LEFIGARO" else Article.__lemonde ,condensed_text=self.condensed,)
 
     @classmethod
-    def establish_link(cls,article_list1:list["Article"],article_list2:list["Article"])-> list["int"]:
-        article_db_list1:list["article_db"]=[ art.convert_to_db_article() for art in article_list1]
-        article_db_list2:list["article_db"]=[ art.convert_to_db_article() for art in article_list2]
+    def establish_link(cls,article_list1:list["Article"],article_list2:list["Article"]):
+        article_db_list1:list["models.article_db"]=[ art.convert_to_db_article() for art in article_list1]
+        article_db_list2:list["models.article_db"]=[ art.convert_to_db_article() for art in article_list2]
         for tosave  in article_db_list1 + article_db_list2: tosave.save()
         
         index_lst1=0
@@ -196,7 +202,6 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
         
 
 
-
 class Main_Page_Scrapper_Le_Figaro(Main_Page_Scrapper):
 
     # Main interest function, must be implemented by all Main page scrappers 
@@ -325,23 +330,27 @@ def get_all_articles_Monde()-> list[Article]:
 
 
 
-if __name__=="__main__":
+def start_scraping():
+    logger.critical("Starting scrap !")
     start_time = time.time()
     array_figaro:list["Article"] = get_all_articles_Figaro()
-    print(f"crunched {len(array_figaro)} Figaro in {time.time()-start_time}")
+    logger.critical("crunched {len(array_figaro)} Figaro in {time.time()-start_time}")
     start_time = time.time()
     array_monde:list["Article"] = get_all_articles_Monde()
-    print(f"crunched {len(array_monde)} Monde in {time.time()-start_time}")
-    toprint=""
-    for artic_fig in array_figaro :
-        for artic_monde in array_monde:
-            similarity=artic_fig.articles_are_similar(artic_monde)
-            toprint += f"Figaro :{artic_fig.title}  \nMonde: {artic_monde.title} \nsimilarity:{similarity} \n\n" if (similarity[0] > 0.2 and similarity[1] > 0.2) or (similarity[0] > 0.4 or  similarity[1] > 0.4) else ""
-    with open("/home/alexandre/Desktop/results.txt","w") as fl:
-        fl.write(toprint)
+    logger.critical(f"crunched {len(array_monde)} Monde in {time.time()-start_time}")
+    Article.establish_link(array_figaro,array_monde)
+    logger.critical("everything in DB !")
+    #toprint=""
+    #for artic_fig in array_figaro :
+    #    for artic_monde in array_monde:
+    #        similarity=artic_fig.articles_are_similar(artic_monde)
+    #        toprint += f"Figaro :{artic_fig.title}  \nMonde: {artic_monde.title} \nsimilarity:{similarity} \n\n" if (similarity[0] > 0.2 and similarity[1] > 0.2) or (similarity[0] > 0.4 or  similarity[1] > 0.4) else ""
+    #with open("/home/alexandre/Desktop/results.txt","w") as fl:
+    #    fl.write(toprint)
 
         
-
+#if __name__=="__main__":
+#    start_scraping()
     
     
 
