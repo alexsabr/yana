@@ -13,7 +13,7 @@ clean:
 
 
 dock:
-	docker build --no-cache --tag yana    --progress=plain -f ./docker/Dockerfile  .
+	docker build --tag yana    --progress=plain -f ./docker/Dockerfile  .
 
 
 run-compose:

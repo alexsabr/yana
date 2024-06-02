@@ -10,6 +10,7 @@ services:
     depends_on:
       - yana-postgres
 
+
   yana-postgres:
     ports:
     - "${PG_OUTSIDE_PORT}:5432"

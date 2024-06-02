@@ -27,3 +27,4 @@ RUN chmod   755 /root/django-yana
 RUN chmod   755 /root/django-yana/.venv
 RUN shell/configure_httpd.sh
 RUN ls .
+ENTRYPOINT [ "./shell/entrypoint.sh" ]

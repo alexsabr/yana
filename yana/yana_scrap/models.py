@@ -3,9 +3,20 @@ from datetime import date
 
 
 class journal_db(models.Model):
-    ORIENTATION=["Far-Left","Left","Center","Right","Far-Right"]
+    FL="FLEFT"
+    L="LEFT"
+    C="CENTER"
+    R="RIGHT"
+    FR="FRIGHT"
+    ORIENTATIONS=[
+        (FL,"Far-Left")
+        ,(L,"Left")
+        ,(C,"Center")
+        ,(R,"Right")
+        ,(FR,"Far-Right")
+    ]
     name=models.CharField(null=False)
-    political = models.CharField(null=False,choices=ORIENTATION)
+    political = models.CharField(null=False,choices=ORIENTATIONS)
 
 
 # Create your models here.

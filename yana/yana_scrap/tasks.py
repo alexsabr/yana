@@ -10,12 +10,11 @@ from models import article_db,journal_db
 
 class Article():
     """ Small Data Holder class for Articles, regardless of Source."""
-
      
     __article_nlp = spacy.load('fr_core_news_sm')
     __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
-    __lefigaro =journal_db(name="Le Figaro", political = journal_db.ORIENTATION[3])
-    __lemonde =journal_db(name="Le Monde", political = journal_db.ORIENTATION[1])
+    __lefigaro =journal_db(name="Le Figaro", political = journal_db.R)
+    __lemonde =journal_db(name="Le Monde", political = journal_db.L)
 
     def convert_to_db_article(self)->article_db:
         return article_db(title=self.title,journal=Article.__lefigaro if self.source =="LEFIGARO" else Article.__lemonde ,condensed_text=self.condensed,)
