@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 urlpatterns = [
-    path("",views.getHome, name="home"), # hook to launch scrapping, vowed to disappear.
-    
+    path("article",views.getHome, name="home"), 
+    path("number",views.number_articles_available, name="article_number"), 
+    path("",views.number_articles_available)
 ]

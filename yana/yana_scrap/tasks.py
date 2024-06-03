@@ -17,12 +17,12 @@ class Article():
     __article_nlp = spacy.load('fr_core_news_sm')
     __ARTICLE_SIMILAR_THRESHOLD_LEVEL=0.3
     __lefigaro =models.journal_db(name="Le Figaro", political = models.journal_db.R)
-    __lefigaro.save()
-    
     __lemonde =models.journal_db(name="Le Monde", political = models.journal_db.L)
-    __lemonde.save()
+    
 
     def convert_to_db_article(self)->models.article_db:
+        self.__lefigaro.save()
+        self.__lemonde.save()
         return models.article_db(title=self.title,journal=Article.__lefigaro if self.source =="LEFIGARO" else Article.__lemonde ,condensed_text=self.condensed,)
 
     @classmethod
