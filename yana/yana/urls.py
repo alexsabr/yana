@@ -19,5 +19,6 @@ from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("scrap/",include("yana_scrap.urls"))
+    path("scrap/",include("yana_scrap.urls")),
+    path("/",include("yana_main.urls"))
 ]
