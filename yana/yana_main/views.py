@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 # Create your views here.
 
 
+
+
+
 def getHome(request:HttpRequest):
     selected_article_pk=random.choice(article_db.objects.values_list("pk",flat=True))
     selected_article= {}
@@ -17,7 +20,8 @@ def getHome(request:HttpRequest):
         selected_article=article_db.objects.get(pk=selected_article_pk)
     except article_db.DoesNotExist:
         raise Http404("Article not found ... Sorry!")
-    toret =JsonResponse(serializers.serialize("json",selected_article),safe=False)
+
+    toret =JsonResponse(selected_article.model_to_dict(recursive=True),safe=True)
     #toret.status_code=200
     return toret
 
