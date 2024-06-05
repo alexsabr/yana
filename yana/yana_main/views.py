@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def getHome(request:HttpRequest):
-    selected_article_pk=random.choice(article_db.objects.values_list("pk",flat=True))
+    selected_article_pk=random.choice(article_db.objects.filter(linked_article__isnull=False).values_list("pk",flat=True))
     selected_article= {}
     try :
         selected_article=article_db.objects.get(pk=selected_article_pk)
