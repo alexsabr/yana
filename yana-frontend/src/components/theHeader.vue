@@ -10,12 +10,10 @@
     </header>
 </template>
 
-
-
 <script>
 export default {
 
-};
+}
 </script>
 <style scoped>
 
@@ -24,8 +22,6 @@ header {
     background-color: #977325;
     align-items: center;
 }
-
-
 
 ul {
     list-style:none;
