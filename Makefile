@@ -9,11 +9,12 @@ clean:
 	python3 -m venv .venv && \
 	source .venv/bin/activate && \
 	python3 -m pip install -r requirements.txt && \
-	python3 -m spacy download fr_core_news_sm 
+	printf "requirements OK\n" && \
+	python3 -m spacy download fr_core_news_sm
 
 
 dock:
-	docker build --tag yana    --progress=plain -f ./docker/Dockerfile  .
+	docker build  --tag yana    --progress=plain -f ./docker/Dockerfile  .
 
 
 run-compose:
@@ -25,4 +26,4 @@ stop-compose:
 
 
 run-alone:
-	docker run --rm  -p 8080:80 yana:latest
+	docker run --rm  -p 8081:80 yana:latest

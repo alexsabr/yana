@@ -19,7 +19,7 @@ export default {
   },
   methods: {
     triggerRefresh () {
-      const triggerPromise = fetch('localhost:8081/scrap')
+      const triggerPromise = fetch('http://localhost:8081/scrap')
       triggerPromise.then((response) => {
         if (response.status === 200) {
           this.scrapSuccessMessage()

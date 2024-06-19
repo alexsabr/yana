@@ -265,8 +265,8 @@ class Article_Scrapper_Le_Figaro(Article_Scrapper):
 
     #========= Main interest function, must be implemented by all scrapers
     @classmethod
-    def get_article(cls,url:str)->Article:
-        """Given the URL of a Le Figaro Article, converts it to an Article Object."""
+    def get_article(cls,url:str)->Article | None:
+        """Given the URL of a Le Figaro Article, converts it to an Article Object. returns None if conversion failed."""
         tree:bs4.BeautifulSoup = cls.__download_page(url)
         if tree is None : raise RuntimeError("Unable to Access the requested web page or to convert it into a soup.")
         return cls.__parse_page(tree)
@@ -281,14 +281,19 @@ class Article_Scrapper_Le_Figaro(Article_Scrapper):
         return  bs4.BeautifulSoup(result.text,features="html.parser")
    
     @classmethod
-    def __parse_page(cls,pagesoup:bs4.BeautifulSoup):       
-        artic_title=pagesoup.find(cls.__filter_title).text       
-        artic_desc=pagesoup.find(cls.__filter_description).text
-        artic_text=""
-        for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
-            paragraph:bs4.Tag
-            artic_text+="\n"+ paragraph.text
-        return Article(artic_title,artic_desc,artic_text,"LEFIGARO")
+    def __parse_page(cls,pagesoup:bs4.BeautifulSoup)->Article | None:
+        """Returns None if the soup given is not a Figaro Article."""
+        try :
+            artic_title=pagesoup.find(cls.__filter_title).text       
+            artic_desc=pagesoup.find(cls.__filter_description).text
+            artic_text=""
+        
+            for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
+                paragraph:bs4.Tag
+                artic_text+="\n"+ paragraph.text
+            return Article(artic_title,artic_desc,artic_text,"LEFIGARO")
+        except AttributeError as e :
+            return None
     
     # ======== filter functions to analyse the tree (helper lambdas  of the helper functions) ============
     @classmethod
@@ -310,7 +315,10 @@ def get_all_articles_Figaro()-> list[Article]:
     link_array=Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/")+Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/economie")+Main_Page_Scrapper_Le_Figaro.get_article_links("https://www.lefigaro.fr/actualite-france")
     article_array=[]
     for a_link in link_array:
-        article_array.append(Article_Scrapper_Le_Figaro.get_article(a_link))
+        analysis_result =Article_Scrapper_Le_Figaro.get_article(a_link)
+        if analysis_result is None : 
+            continue
+        article_array.append(analysis_result)
     return article_array
 
 
@@ -334,7 +342,7 @@ def start_scraping():
     logger.critical("Starting scrap !")
     start_time = time.time()
     array_figaro:list["Article"] = get_all_articles_Figaro()
-    logger.critical("crunched {len(array_figaro)} Figaro in {time.time()-start_time}")
+    logger.critical(f"crunched {len(array_figaro)} Figaro in {time.time()-start_time}")
     start_time = time.time()
     array_monde:list["Article"] = get_all_articles_Monde()
     logger.critical(f"crunched {len(array_monde)} Monde in {time.time()-start_time}")

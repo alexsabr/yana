@@ -1,7 +1,10 @@
 Django==5.0.6
+django-cors-headers
 requests==2.32.2
 beautifulsoup4==4.12.3 
 setuptools==70.0.0
+numpy==1.26 #numpy version forced because of build bug when 2.0 was released forbidding spacy from downloading models.
 wheel==0.43.0
 spacy==3.7.4
 psycopg[binary]
+

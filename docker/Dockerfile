@@ -6,7 +6,8 @@ python3.11-venv \
 libapache2-mod-wsgi-py3 \
 nano \
 less \
-make
+make 
+
 
 WORKDIR /root
 ## configuring apache 

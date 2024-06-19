@@ -11,6 +11,7 @@ WSGIApplicationGroup %{GLOBAL}
 
 <Directory /root/django-yana/yana>
 <Files wsgi.py>
+Header set Access-Control-Allow-Origin "*"
 Require all granted
 </Files>
 </Directory>" >> "/usr/local/apache2/conf/httpd.conf"

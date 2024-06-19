@@ -14,7 +14,7 @@ export default createStore({
   },
   actions: {
     updateNumberOfArticles (context) {
-      const numberPromise = fetch('localhost:8081/number')
+      const numberPromise = fetch('http://localhost:8081/number')
       let newnumber = -42
       numberPromise.then((response) => {
         if (response.status !== 200) { console.log('error when fetching article') }
