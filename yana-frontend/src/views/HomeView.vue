@@ -4,15 +4,19 @@
     <li v-for="learticle in articles_to_display" v-bind:key=learticle.title>
     <h4> {{learticle["title"]}}</h4>
     <h5>{{learticle["journal"]["name"]}}</h5>
-    <br><br>
     <p>{{learticle["condensed_text"]}}</p>
-
-    <p>hello</p>
+    <ul>
+    <li v-for="similararticle in learticle.linked_article" v-bind:key=similararticle.title>
+      <br>
+      <h4>{{similararticle["title"]}}</h4>
+    <h5>{{similararticle["journal"]["name"]}}</h5>
+    </li>
+  </ul>
     </li>
   </ul>
   <p v-else>Here shortly the articles !</p>
 
-  <button @click="fetchArticle()">Show me media !</button>
+  <button @click="fetchArticle()">Show some media !</button>
 </template>
 
 <script>

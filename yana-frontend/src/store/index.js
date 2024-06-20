@@ -1,6 +1,6 @@
 import { createStore } from 'vuex'
 
-export default createStore({
+const store = createStore({
   state: {
     numberOfArticles: 0
   },
@@ -16,16 +16,19 @@ export default createStore({
     updateNumberOfArticles (context) {
       const numberPromise = fetch('http://localhost:8081/number')
       let newnumber = -42
+      const contextForPromise = context
       numberPromise.then((response) => {
         if (response.status !== 200) { console.log('error when fetching article') }
         const jsonprom = response.json()
         jsonprom.then((data) => {
           newnumber = data.number_article_available
+          contextForPromise.commit('setNumberOfArticles', newnumber)
         })
       })
-      context.store.commit('setNumberOfArticles', newnumber)
     }
   },
   modules: {
   }
 })
+
+export default store

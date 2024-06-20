@@ -13,6 +13,12 @@
 <script>
 export default {
 
+  mounted () {
+    this.$store.dispatch('updateNumberOfArticles')
+  },
+  methods: {
+  }
+
 }
 </script>
 <style scoped>

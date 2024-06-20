@@ -1,6 +1,5 @@
 <template>
-
-<theheader></theheader>
+  <theheader></theheader>
   <router-view></router-view>
 </template>
 
