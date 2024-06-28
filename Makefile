@@ -13,6 +13,11 @@ clean:
 	python3 -m spacy download fr_core_news_sm
 
 
+build: front dock
+
+front:
+	npm run --prefix ./yana-frontend build
+
 dock:
 	docker build  --tag yana    --progress=plain -f ./docker/Dockerfile  .
 
