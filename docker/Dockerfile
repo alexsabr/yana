@@ -32,6 +32,7 @@ RUN chmod --recursive 755  /root/yana-front
 
 ## configuring apache 
 RUN shell/configure_httpd.sh
+RUN apachectl configtest
 
 RUN ls .
 ENTRYPOINT [ "./shell/entrypoint.sh" ]

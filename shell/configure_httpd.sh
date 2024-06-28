@@ -3,17 +3,25 @@ set -eux
 
 
 echo "
+## Module to make django work with apache
+LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
 
+## Configuration to make backend's django use the  venv
+WSGIPythonHome /root/django-yana/.venv/
+WSGIPythonPath /root/django-yana
+WSGIApplicationGroup %{GLOBAL}
+## Set to global otherwise numpy will not work !
 
 
 
 <VirtualHost *:80>
-	DocumentRoot "/root/yana-front/"
+	DocumentRoot \"/root/yana-front/\"
 	<Directory /root/yana-front>
 		Header set Access-Control-Allow-Origin *
 		AllowOverride all
+		<Files *>
 		Require all granted
-
+		</Files>
 		Options indexes FollowSymLinks Multiviews
 
 		<IfModule mod_rewrite.c>
@@ -27,14 +35,13 @@ echo "
 	</Directory>
 </VirtualHost>
 
+Listen 81
 <VirtualHost *:81>
-<Directory /root/django-yana/yana>
-## Modules to make django work with apache
-LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
+## put WSGIScriptAlias inside a virtual host else every virtualhost will be treated as backend !
 WSGIScriptAlias / /root/django-yana/yana/wsgi.py
-WSGIPythonHome /root/django-yana/.venv/
-WSGIPythonPath /root/django-yana
-WSGIApplicationGroup %{GLOBAL}
+
+<Directory /root/django-yana/yana>
+
 
 <Files wsgi.py>
 Header set Access-Control-Allow-Origin *
