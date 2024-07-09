@@ -1,11 +1,12 @@
 import requests
-import bs4
+import bs4 # scraper
 import typing
 import abc
 import re
-import spacy
+import spacy # text processing neural network
 import time 
 import logging
+import traceback
 from . import models
 
 
@@ -125,11 +126,12 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     def __full_article_filter(cls,tag:bs4.Tag)-> bool:
         """ From the Main Page of Le Monde, ensures only press articles are extracted."""
         toret =cls.__filter_articles_only(tag)
-        toret = toret and tag.find(cls.__generate_filter_by_article_type("Tribune")) is None
+        toret = toret and tag.find(cls.__generate_filter_by_article_type("Tribune"))   is None
         toret = toret and tag.find(cls.__generate_filter_by_article_type("Chronique")) is None
         toret = toret and tag.find(cls.__generate_filter_by_article_type("Éditorial")) is None
         toret = toret and tag.find(cls.__generate_filter_by_article_type("Entretien")) is None
         toret = toret and tag.find(cls.__filter_live) is None
+        toret = toret and tag.find(cls.__filter_grand_format) is None 
         return toret      
     
     @classmethod
@@ -139,6 +141,11 @@ class Main_Page_Scrapper_Le_Monde(Main_Page_Scrapper):
     @classmethod
     def __filter_live(cls,tag:bs4.Tag)-> bool: 
             return tag.name=="span" and tag.has_attr('class') and "flag-live-cartridge" in tag["class"]
+    
+    @classmethod
+    def __filter_grand_format(cls,tag:bs4.Tag)->bool:
+        #FIXME find content, also think about going in whitelist mode instead of an infinite task vs finite developer time
+        return  tag.name=="span" and "Grand format"  in tag.text
 
     @classmethod
     def __extract_title(cls,tag:bs4.Tag)-> str | None :
@@ -176,7 +183,7 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
     @classmethod
     def __parse_page(cls,pagesoup:bs4.BeautifulSoup):
         try :
-            artic_title=pagesoup.find(cls.__filter_title).text       
+            artic_title=pagesoup.find(cls.__filter_title).text        # find
             artic_desc=pagesoup.find(cls.__filter_description).text
             artic_text=""
             for paragraph  in  pagesoup.find_all(cls.__filter_text_only) :
@@ -185,6 +192,8 @@ class Article_Scrapper_Le_Monde(Article_Scrapper):
             return Article(artic_title,artic_desc,artic_text,"LEMONDE")
         except  AttributeError as  e:
             print(f"Attribute Error {str(e)}")
+            print(pagesoup)
+            traceback.print_exception(e)
             return None
     
     # ======== filter functions to analyse the tree (helper lambdas  of the helper functions) ============
