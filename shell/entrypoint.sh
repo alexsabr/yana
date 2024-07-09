@@ -1,11 +1,11 @@
 #!/usr/bin/bash
 set -euf
 
-#. .venv/bin/activate && \
+. .venv/bin/activate && \
 printf "venv activate \n" && \
-#python3 manage.py makemigrations && \
+python3 manage.py makemigrations && \
 printf "migrations created \n" && \
-#python3 manage.py migrate && \
+python3 manage.py migrate && \
 printf "migration ran \n" && \
 httpd-foreground
 
